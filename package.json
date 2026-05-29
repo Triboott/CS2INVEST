@@ -1,0 +1,13 @@
+{
+  "name": "cs2-portfolio-tracker",
+  "version": "1.0.0",
+  "description": "Gestor de inversiones táctico de Counter-Strike 2",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "start": "vite"
+  },
+  "devDependencies": {
+    "vite": "^4.5.0"
+  }
+}

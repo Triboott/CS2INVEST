@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS2INVEST - CS2 Investment Tracker</title>
+    
+    <!-- Google Fonts: Outfit (modern gaming look) & JetBrains Mono for numbers -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js for premium graphics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Firebase Compat SDKs (App, Auth, Firestore) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <!-- Tactical Grid Overlay Background -->
+    <div class="grid-overlay"></div>
+    <div class="radial-glow"></div>
+
+    <!-- LOGIN WALL BLOCKER -->
+    <div class="login-wall" id="login-wall">
+        <div class="login-card">
+            <!-- Language Selector on Login Screen -->
+            <div class="login-lang-wrapper">
+                <i class="fa-solid fa-earth-americas lang-icon"></i>
+                <select class="lang-select-dropdown login-lang-select" id="login-lang-select">
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                </select>
+            </div>
+
+            <div class="login-logo">
+                <i class="fa-solid fa-crosshairs login-crosshair-icon"></i>
+                <h2>CS2<span>INVEST</span></h2>
+                <p class="login-subtitle" data-i18n="app_subtitle">INVESTMENT TRACKER</p>
+            </div>
+            
+            <p class="login-desc" data-i18n="login_desc">Synchronize your investments securely in the cloud and access your portfolio from any device without losing your data.</p>
+            
+            <div class="login-actions">
+                <button id="btn-login-google-real" class="btn-login-primary">
+                    <i class="fa-brands fa-google"></i> <span data-i18n="btn_login_google">Sign in with Google</span>
+                </button>
+            </div>
+
+            <!-- Collapsible Firebase Database Setup inside Login Card -->
+            <div class="login-db-config">
+                <div class="db-config-toggle" id="db-config-toggle">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span data-i18n="db_config_toggle_text">Database Setup (Firebase)</span>
+                    <i class="fa-solid fa-chevron-down toggle-arrow" id="config-arrow"></i>
+                </div>
+                
+                <div class="db-config-content hidden" id="db-config-content">
+                    <p class="fb-config-desc" data-i18n="fb_config_desc">Paste your Firebase project credentials below to enable cloud synchronization.</p>
+                    
+                    <div class="firebase-fields">
+                        <div class="form-group-compact">
+                            <label for="fb-api-key">API Key:</label>
+                            <input type="password" id="fb-api-key" placeholder="AIzaSy...">
+                        </div>
+                        <div class="form-group-compact">
+                            <label for="fb-auth-domain">Auth Domain:</label>
+                            <input type="text" id="fb-auth-domain" placeholder="project.firebaseapp.com">
+                        </div>
+                        <div class="form-group-compact">
+                            <label for="fb-project-id">Project ID:</label>
+                            <input type="text" id="fb-project-id" placeholder="project-id">
+                        </div>
+                        <div class="form-group-compact">
+                            <label for="fb-app-id">App ID:</label>
+                            <input type="text" id="fb-app-id" placeholder="1:12345:web:abcd">
+                        </div>
+                        <div class="firebase-config-buttons">
+                            <button id="btn-save-firebase" class="btn-small-primary" title="Connect Cloud">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> <span data-i18n="btn_connect_cloud">Connect Cloud</span>
+                            </button>
+                            <button id="btn-disconnect-firebase" class="btn-small-danger hidden" title="Disconnect Firebase">
+                                <i class="fa-solid fa-cloud-slash"></i> <span data-i18n="btn_disconnect_cloud">Disconnect</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="login-footer">
+                <span class="status-indicator online"></span>
+                <span id="login-status-text" data-i18n="login_status_ready">SYSTEM READY</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTENT -->
+    <div class="app-container hidden" id="app-content">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-crosshairs logo-crosshair"></i>
+                    <i class="fa-solid fa-wallet logo-wallet"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>CS2<span>INVEST</span></h1>
+                    <p class="subtitle" data-i18n="app_subtitle">INVESTMENT TRACKER</p>
+                </div>
+            </div>
+            
+            <div class="header-status-area">
+                <!-- Header Language Selector -->
+                <div class="header-lang-selector">
+                    <i class="fa-solid fa-earth-americas lang-icon"></i>
+                    <select class="lang-select-dropdown" id="header-lang-select">
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                    </select>
+                </div>
+
+                <div class="header-status" id="db-status-badge">
+                    <span class="status-indicator online"></span>
+                    <span class="status-text">CLOUD SYNC</span>
+                </div>
+                
+                <!-- Active User Profile Container -->
+                <div id="google-profile-container" class="profile-container">
+                    <div id="google-user-profile" class="user-profile">
+                        <img id="user-avatar" src="" alt="Avatar" class="user-avatar-img">
+                        <div class="user-info">
+                            <span id="user-display-name" class="user-name">User</span>
+                            <span id="user-email-text" class="user-email">email@google.com</span>
+                        </div>
+                        <button id="btn-logout" class="btn-action-icon btn-logout-icon" title="Sign out">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- DASHBOARD METRICS -->
+        <section class="dashboard-metrics">
+            <!-- Metric Card 1: Total Invested -->
+            <div class="metric-card card-glow-orange">
+                <div class="card-inner">
+                    <div class="metric-info">
+                        <span class="metric-label" data-i18n="metric_total_invested">TOTAL INVESTED</span>
+                        <h2 id="metric-total-invested" class="currency-text">0.00€</h2>
+                        <span class="metric-subtext" id="metric-total-items-count">0 items purchased</span>
+                    </div>
+                    <div class="metric-icon icon-orange">
+                        <i class="fa-solid fa-piggy-bank"></i>
+                    </div>
+                </div>
+                <div class="card-border"></div>
+            </div>
+
+            <!-- Metric Card 2: Total Sold / Sales -->
+            <div class="metric-card card-glow-green">
+                <div class="card-inner">
+                    <div class="metric-info">
+                        <span class="metric-label" data-i18n="metric_total_sales">TOTAL SALES / RETURN</span>
+                        <h2 id="metric-total-revenue" class="currency-text">0.00€</h2>
+                        <span class="metric-subtext" id="metric-sold-items-count">0 items sold</span>
+                    </div>
+                    <div class="metric-icon icon-green">
+                        <i class="fa-solid fa-hand-holding-dollar"></i>
+                    </div>
+                </div>
+                <div class="card-border"></div>
+            </div>
+
+            <!-- Metric Card 3: Net Profit -->
+            <div class="metric-card" id="profit-metric-card">
+                <div class="card-inner">
+                    <div class="metric-info">
+                        <span class="metric-label" data-i18n="metric_net_balance">NET BALANCE</span>
+                        <h2 id="metric-net-profit" class="currency-text">0.00€</h2>
+                        <span class="metric-subtext" id="metric-profit-percentage">ROI: 0.00%</span>
+                    </div>
+                    <div class="metric-icon" id="profit-metric-icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                </div>
+                <div class="card-border"></div>
+            </div>
+
+            <!-- Metric Card 4: Inventory Value -->
+            <div class="metric-card card-glow-gold">
+                <div class="card-inner">
+                    <div class="metric-info">
+                        <span class="metric-label" data-i18n="metric_portfolio_assets">PORTFOLIO ASSETS</span>
+                        <h2 id="metric-active-value" class="currency-text">0.00€</h2>
+                        <span class="metric-subtext" id="metric-active-items-count">0 active items</span>
+                    </div>
+                    <div class="metric-icon icon-gold">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                </div>
+                <div class="card-border"></div>
+            </div>
+        </section>
+
+        <!-- MAIN LAYOUT GRID -->
+        <main class="main-content">
+            <!-- LEFT PANEL: FORM & SETTINGS -->
+            <div class="left-panel">
+                <!-- FORM CONTAINER -->
+                <div class="panel-card" id="form-container">
+                    <div class="panel-header">
+                        <i class="fa-solid fa-plus-circle panel-header-icon"></i>
+                        <h3 data-i18n="form_title">REGISTER INVESTMENT</h3>
+                    </div>
+                    <div class="panel-body">
+                        <form id="investment-form">
+                            <input type="hidden" id="edit-id" value="">
+                            
+                            <div class="form-group">
+                                <label for="item-name"><i class="fa-solid fa-tags"></i> <span data-i18n="form_item_name">Item Name</span></label>
+                                <input type="text" id="item-name" placeholder="e.g., Operation Riptide Case" required>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="item-category"><i class="fa-solid fa-list"></i> <span data-i18n="form_category">Category</span></label>
+                                    <select id="item-category" required>
+                                        <option value="case" data-i18n="cat_case">Case</option>
+                                        <option value="skin" data-i18n="cat_skin">Skin</option>
+                                        <option value="sticker" data-i18n="cat_sticker">Sticker</option>
+                                        <option value="capsule" data-i18n="cat_capsule">Capsule</option>
+                                        <option value="agent" data-i18n="cat_agent">Agent</option>
+                                        <option value="other" data-i18n="cat_other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="item-qty"><i class="fa-solid fa-calculator"></i> <span data-i18n="form_quantity">Quantity</span></label>
+                                    <input type="number" id="item-qty" min="1" step="1" value="1" required>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="item-price"><i class="fa-solid fa-euro-sign"></i> <span data-i18n="form_unit_price">Unit Purchase Price</span></label>
+                                    <input type="number" id="item-price" min="0.01" step="0.01" placeholder="0.00" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="item-date"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="form_purchase_date">Purchase Date</span></label>
+                                    <input type="date" id="item-date" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="item-notes"><i class="fa-solid fa-comment-dots"></i> <span data-i18n="form_notes">Additional Notes (Optional)</span></label>
+                                <input type="text" id="item-notes" placeholder="e.g., Steam Market purchase">
+                            </div>
+
+                            <div class="form-buttons">
+                                <button type="submit" id="btn-submit" class="btn-primary">
+                                    <i class="fa-solid fa-check"></i> <span id="submit-btn-text" data-i18n="btn_add_portfolio">Add to Portfolio</span>
+                                </button>
+                                <button type="button" id="btn-cancel" class="btn-secondary hidden" data-i18n="btn_cancel">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- CONTROLES DE BACKUP Y DATOS -->
+                <div class="panel-card settings-card">
+                    <div class="panel-header">
+                        <i class="fa-solid fa-database panel-header-icon"></i>
+                        <h3 data-i18n="backup_title">MANAGE DATA</h3>
+                    </div>
+                    <div class="panel-body data-panel-body">
+                        <div class="backup-buttons">
+                            <button id="btn-export" class="btn-data-action" title="Export portfolio as JSON file">
+                                <i class="fa-solid fa-file-export"></i> <span data-i18n="btn_export_json">Export JSON</span>
+                            </button>
+                            <button id="btn-import-trigger" class="btn-data-action" title="Import portfolio from JSON file">
+                                <i class="fa-solid fa-file-import"></i> <span data-i18n="btn_import_json">Import JSON</span>
+                            </button>
+                            <input type="file" id="import-file" class="hidden" accept=".json">
+                        </div>
+                        
+                        <button id="btn-clear" class="btn-danger-action" title="Clear entire portfolio">
+                            <i class="fa-solid fa-trash-can"></i> <span data-i18n="btn_clear_all">Clear All Data</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: VISUAL CHARTS -->
+            <div class="right-panel">
+                <div class="panel-card charts-card">
+                    <div class="panel-header tab-header">
+                        <div class="tab-title active" data-tab="distribution" id="tab-title-dist">
+                            <i class="fa-solid fa-chart-pie"></i> <span data-i18n="tab_distribution">Capital Distribution</span>
+                        </div>
+                        <div class="tab-title" data-tab="performance" id="tab-title-perf">
+                            <i class="fa-solid fa-chart-simple"></i> <span data-i18n="tab_performance">Sales Performance</span>
+                        </div>
+                    </div>
+                    <div class="panel-body chart-body">
+                        <!-- Chart container for Distribution -->
+                        <div class="chart-container active" id="tab-distribution">
+                            <canvas id="chart-distribution"></canvas>
+                            <div class="chart-empty-message hidden" id="dist-empty">
+                                <i class="fa-solid fa-chart-pie"></i>
+                                <p data-i18n="empty_chart_dist">Add investments to view your capital distribution.</p>
+                            </div>
+                        </div>
+                        <!-- Chart container for Performance -->
+                        <div class="chart-container" id="tab-performance">
+                            <canvas id="chart-performance"></canvas>
+                            <div class="chart-empty-message hidden" id="perf-empty">
+                                <i class="fa-solid fa-chart-line"></i>
+                                <p data-i18n="empty_chart_perf">Register sales to view your performance comparison.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- BOTTOM PANEL: TABLE OF INVESTMENTS -->
+        <section class="bottom-panel">
+            <div class="panel-card table-card">
+                <div class="table-toolbar">
+                    <div class="toolbar-title">
+                        <i class="fa-solid fa-folder-open toolbar-icon"></i>
+                        <h3 data-i18n="table_title">INVESTMENT PORTFOLIO</h3>
+                    </div>
+                    
+                    <!-- FILTERS AREA -->
+                    <div class="filters-container">
+                        <!-- Search input -->
+                        <div class="search-wrapper">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" id="search-input" placeholder="Search by item..." data-i18n-placeholder="search_placeholder">
+                        </div>
+
+                        <!-- Filter Category -->
+                        <select id="filter-category" class="filter-select">
+                            <option value="all" data-i18n="filter_cat_all">All Categories</option>
+                            <option value="case" data-i18n="filter_cat_cases">Cases</option>
+                            <option value="skin" data-i18n="filter_cat_skins">Skins</option>
+                            <option value="sticker" data-i18n="filter_cat_stickers">Stickers</option>
+                            <option value="capsule" data-i18n="filter_cat_capsules">Capsules</option>
+                            <option value="agent" data-i18n="filter_cat_agents">Agents</option>
+                            <option value="other" data-i18n="filter_cat_others">Others</option>
+                        </select>
+
+                        <!-- Filter Status -->
+                        <select id="filter-status" class="filter-select">
+                            <option value="all" data-i18n="filter_status_all">All Statuses</option>
+                            <option value="active" data-i18n="filter_status_active">Active (In Portfolio)</option>
+                            <option value="sold" data-i18n="filter_status_sold">Sold</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="investments-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="th_item">Item</th>
+                                <th data-i18n="th_category">Category</th>
+                                <th data-i18n="th_qty">Qty</th>
+                                <th data-i18n="th_buy_price">Unit Buy Price</th>
+                                <th data-i18n="th_total_invested">Total Invested</th>
+                                <th data-i18n="th_sell_price">Unit Sell Price</th>
+                                <th data-i18n="th_total_return">Total Return</th>
+                                <th data-i18n="th_profit_loss">Profit / Loss</th>
+                                <th data-i18n="th_actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="investments-list">
+                            <!-- Transactions will be loaded dynamically here -->
+                        </tbody>
+                    </table>
+                    
+                    <div class="empty-state" id="table-empty-state">
+                        <i class="fa-solid fa-box-open"></i>
+                        <h4 data-i18n="empty_table_title">No transactions registered</h4>
+                        <p data-i18n="empty_table_desc">Use the form above to add your first CS2 investment.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- MODAL: REGISTRAR VENTA -->
+    <div class="modal-overlay" id="sale-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-cash-register"></i> <span data-i18n="modal_title">Register Sale</span></h3>
+                <button class="modal-close" id="btn-close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description" data-i18n="modal_desc">Register the sale of your item to calculate your final net profit or loss.</p>
+                <div class="modal-item-preview">
+                    <span id="modal-item-badge" class="badge">Skin</span>
+                    <strong id="modal-item-name">AK-47 | Redline</strong>
+                </div>
+                
+                <form id="sale-form">
+                    <input type="hidden" id="sale-item-id">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sale-qty"><i class="fa-solid fa-calculator"></i> <span data-i18n="modal_qty_to_sell">Quantity to Sell</span></label>
+                            <input type="number" id="sale-qty" min="1" step="1" required>
+                            <span class="qty-help" id="sale-qty-max">Available: 1</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="sale-price"><i class="fa-solid fa-euro-sign"></i> <span data-i18n="modal_unit_sell_price">Unit Sell Price</span></label>
+                            <input type="number" id="sale-price" min="0.01" step="0.01" placeholder="0.00" required>
+                        </div>
+                    </div>
+
+                    <div class="modal-calculations">
+                        <div class="calc-row">
+                            <span data-i18n="modal_original_cost">Original Purchase Cost:</span>
+                            <strong id="modal-calc-cost">0.00€</strong>
+                        </div>
+                        <div class="calc-row">
+                            <span data-i18n="modal_expected_return">Expected Sale Return:</span>
+                            <strong id="modal-calc-revenue">0.00€</strong>
+                        </div>
+                        <div class="calc-row highlighted-calc">
+                            <span data-i18n="modal_estimated_result">Estimated Net Result:</span>
+                            <strong id="modal-calc-profit">0.00€</strong>
+                        </div>
+                    </div>
+
+                    <div class="modal-buttons">
+                        <button type="button" id="btn-cancel-sale" class="btn-secondary" data-i18n="btn_cancel">Cancel</button>
+                        <button type="submit" class="btn-success">
+                            <i class="fa-solid fa-dollar-sign"></i> <span data-i18n="btn_confirm_sale">Confirm Sale</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICACIONES TOAST -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
