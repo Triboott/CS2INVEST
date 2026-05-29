@@ -488,19 +488,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 6. LÓGICA DE FIREBASE CLOUD
     function loadFirebaseConfig() {
-        const apiKey = localStorage.getItem('cs2_fb_apiKey');
-        const authDomain = localStorage.getItem('cs2_fb_authDomain');
-        const projectId = localStorage.getItem('cs2_fb_projectId');
-        const appId = localStorage.getItem('cs2_fb_appId');
+        // Usar las credenciales reales del proyecto del usuario como valores predeterminados
+        const apiKey = localStorage.getItem('cs2_fb_apiKey') || 'AIzaSyAt9U3Mf6yfN6ToMdMowTmPsAq-TD9Eg_k';
+        const authDomain = localStorage.getItem('cs2_fb_authDomain') || 'cs2invest-triboot.firebaseapp.com';
+        const projectId = localStorage.getItem('cs2_fb_projectId') || 'cs2invest-triboot';
+        const appId = localStorage.getItem('cs2_fb_appId') || '1:515878673410:web:664391969e769e1608db1b';
 
-        if (apiKey && authDomain && projectId && appId) {
-            fbApiKeyInput.value = apiKey;
-            fbAuthDomainInput.value = authDomain;
-            fbProjectIdInput.value = projectId;
-            fbAppIdInput.value = appId;
-            return { apiKey, authDomain, projectId, appId };
-        }
-        return null;
+        // Rellenar visualmente los campos del configurador para facilitar la gestión
+        fbApiKeyInput.value = apiKey;
+        fbAuthDomainInput.value = authDomain;
+        fbProjectIdInput.value = projectId;
+        fbAppIdInput.value = appId;
+
+        return { apiKey, authDomain, projectId, appId };
     }
 
     function initializeFirebaseReal(config) {
