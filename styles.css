@@ -1,5 +1,15 @@
 /* CSS SYSTEM DESIGN - CS2 PORTFOLIO TRACKER */
 
+/* Quitar flechas de inputs tipo number */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
 /* 1. CONFIGURACIÓN Y VARIABLES CORE */
 :root {
     --bg-main: #0a0b0e;
@@ -1441,7 +1451,6 @@ select {
     gap: 24px;
     animation: modalShow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    overflow: hidden;
 }
 
 .login-card:before {
@@ -1552,6 +1561,20 @@ select {
     padding: 6px 12px;
     border-radius: 20px;
     transition: var(--transition-smooth);
+    z-index: 10;
+    cursor: pointer;
+    user-select: none;
+}
+
+.header-lang-selector span,
+.login-lang-wrapper span {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: var(--neutral-grey);
+    transition: var(--transition-smooth);
+    min-width: 20px;
+    text-align: center;
 }
 
 .header-lang-selector:hover,
@@ -1560,9 +1583,10 @@ select {
 }
 
 .login-lang-wrapper {
-    position: absolute;
-    top: 20px;
-    right: 20px;
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 1100;
 }
 
 .lang-icon {
@@ -1647,6 +1671,22 @@ select {
     color: var(--neutral-grey);
     line-height: 1.4;
     margin-bottom: 10px;
+}
+
+/* 12. AJUSTES FINALES Y VALIDACIÓN DE FORMULARIOS */
+.lang-select-dropdown:focus {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    color: #fff !important;
+}
+
+/* Validación Táctica de Formularios Premium */
+.is-invalid {
+    border-color: var(--loss-red) !important;
+    box-shadow: 0 0 10px rgba(255, 71, 71, 0.25) !important;
+    background: rgba(255, 71, 71, 0.03) !important;
 }
 
 

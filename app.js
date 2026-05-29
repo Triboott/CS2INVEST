@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
             login_status_ready: "SYSTEM READY",
             login_status_connecting: "CONNECTING TO FIREBASE CLOUD...",
             login_status_downloading: "RETRIEVING CLOUD PORTFOLIO...",
-            login_status_auth_required: "AUTHENTICATION REQUIRED",
+            login_status_auth_required: "SYSTEM READY",
             login_status_auth_failed: "AUTHENTICATION FAILED",
             
             // Dashboard
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
             login_status_ready: "SISTEMA LISTO",
             login_status_connecting: "CONECTANDO A FIREBASE CLOUD...",
             login_status_downloading: "DESCARGANDO PORTAFOLIO CLOUD...",
-            login_status_auth_required: "AUTENTICACIÓN REQUERIDA",
+            login_status_auth_required: "SISTEMA LISTO",
             login_status_auth_failed: "FALLO EN EL LOGUEO",
 
             // Dashboard
@@ -266,7 +266,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 2. VARIABLES DE ESTADO E INTERNACIONALIZACIÓN
-    let currentLang = localStorage.getItem('cs2_pref_lang') || 'en';
+    let currentLang = 'en';
+    try {
+        currentLang = localStorage.getItem('cs2_pref_lang') || 'en';
+    } catch (e) {
+        console.warn("Storage access denied:", e);
+    }
     let transactions = [];
     let distributionChart = null;
     let performanceChart = null;
@@ -349,9 +354,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnLogout = document.getElementById('btn-logout');
     const dbStatusBadge = document.getElementById('db-status-badge');
 
-    // Selectores de Idioma DOM
-    const loginLangSelect = document.getElementById('login-lang-select');
-    const headerLangSelect = document.getElementById('header-lang-select');
+    // Botones Toggle de Idioma
+    const loginLangBtn = document.getElementById('login-lang-btn');
+    const headerLangBtn = document.getElementById('header-lang-btn');
+    const loginLangLabel = document.getElementById('login-lang-label');
+    const headerLangLabel = document.getElementById('header-lang-label');
 
     // Elementos Firebase Config en Login Wall
     const dbConfigToggle = document.getElementById('db-config-toggle');
@@ -377,14 +384,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3. INICIALIZAR Y CARGAR DATOS
     function init() {
-        // Inicializar Idioma
-        loginLangSelect.value = currentLang;
-        headerLangSelect.value = currentLang;
+        // Inicializar etiquetas de idioma
+        updateLangLabels();
         updateLanguageUI();
 
-        // Registrar Eventos de Cambio de Idioma
-        loginLangSelect.addEventListener('change', (e) => handleLanguageChange(e.target.value));
-        headerLangSelect.addEventListener('change', (e) => handleLanguageChange(e.target.value));
+        // Toggle de idioma: click alterna entre EN y ES
+        function toggleLang() {
+            handleLanguageChange(currentLang === 'en' ? 'es' : 'en');
+        }
+        if (loginLangBtn) loginLangBtn.addEventListener('click', toggleLang);
+        if (headerLangBtn) headerLangBtn.addEventListener('click', toggleLang);
 
         // Registro de toggle desplegable Firebase en Login Card
         dbConfigToggle.addEventListener('click', toggleFirebaseConfigAccordion);
@@ -408,6 +417,16 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSaveFirebase.addEventListener('click', handleSaveFirebaseConfig);
         btnDisconnectFirebase.addEventListener('click', handleDisconnectFirebase);
 
+        // Limpiar clase is-invalid al escribir o interactuar
+        [itemNameInput, itemQtyInput, itemPriceInput, itemDateInput, saleQtyInput, salePriceInput].forEach(input => {
+            input.addEventListener('input', () => {
+                input.classList.remove('is-invalid');
+            });
+            input.addEventListener('change', () => {
+                input.classList.remove('is-invalid');
+            });
+        });
+
         // Iniciar gráficos
         initCharts();
     }
@@ -415,16 +434,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. MOTOR DE INTERNACIONALIZACIÓN (i18n)
     function handleLanguageChange(lang) {
         currentLang = lang;
-        localStorage.setItem('cs2_pref_lang', lang);
+        try {
+            localStorage.setItem('cs2_pref_lang', lang);
+        } catch (e) {
+            console.warn("Storage access denied:", e);
+        }
         
-        // Sincronizar los dos selects
-        loginLangSelect.value = lang;
-        headerLangSelect.value = lang;
+        // Sincronizar etiquetas de los botones toggle
+        updateLangLabels();
 
+        // Actualizar todos los textos de la UI
         updateLanguageUI();
         
-        // Volver a renderizar app para actualizar formatos/gráficos
-        renderApp();
+        // Solo re-renderizar la app si hay un usuario logueado (evita errores silenciosos)
+        if (currentUser) {
+            renderApp();
+        }
+    }
+
+    function updateLangLabels() {
+        const label = currentLang === 'es' ? 'ES' : 'EN';
+        if (loginLangLabel) loginLangLabel.textContent = label;
+        if (headerLangLabel) headerLangLabel.textContent = label;
     }
 
     function updateLanguageUI() {
@@ -477,7 +508,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Actualizar texto del login wall según idioma
     function updateLoginStatusText(key) {
-        loginStatusText.textContent = getTranslation(key);
+        if (loginStatusText) {
+            loginStatusText.textContent = getTranslation(key);
+        }
     }
 
     // 5. ACORDEÓN DE CONFIGURACIÓN DE FIREBASE EN LOGIN
@@ -489,10 +522,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // 6. LÓGICA DE FIREBASE CLOUD
     function loadFirebaseConfig() {
         // Usar las credenciales reales del proyecto del usuario como valores predeterminados
-        const apiKey = localStorage.getItem('cs2_fb_apiKey') || 'AIzaSyAt9U3Mf6yfN6ToMdMowTmPsAq-TD9Eg_k';
-        const authDomain = localStorage.getItem('cs2_fb_authDomain') || 'cs2invest-triboot.firebaseapp.com';
-        const projectId = localStorage.getItem('cs2_fb_projectId') || 'cs2invest-triboot';
-        const appId = localStorage.getItem('cs2_fb_appId') || '1:515878673410:web:664391969e769e1608db1b';
+        let apiKey = 'AIzaSyAt9U3Mf6yfN6ToMdMowTmPsAq-TD9Eg_k';
+        let authDomain = 'cs2invest-triboot.firebaseapp.com';
+        let projectId = 'cs2invest-triboot';
+        let appId = '1:515878673410:web:664391969e769e1608db1b';
+
+        try {
+            apiKey = localStorage.getItem('cs2_fb_apiKey') || apiKey;
+            authDomain = localStorage.getItem('cs2_fb_authDomain') || authDomain;
+            projectId = localStorage.getItem('cs2_fb_projectId') || projectId;
+            appId = localStorage.getItem('cs2_fb_appId') || appId;
+        } catch (e) {
+            console.warn("Storage access denied:", e);
+        }
 
         // Rellenar visualmente los campos del configurador para facilitar la gestión
         fbApiKeyInput.value = apiKey;
@@ -520,8 +562,10 @@ document.addEventListener('DOMContentLoaded', () => {
             fbDb = firebase.firestore();
             isCloudConnected = true;
 
-            fbConnectionStatus.textContent = currentLang === 'es' ? "Conectado" : "Connected";
-            fbConnectionStatus.className = "fb-status-label connected";
+            if (fbConnectionStatus) {
+                fbConnectionStatus.textContent = currentLang === 'es' ? "Conectado" : "Connected";
+                fbConnectionStatus.className = "fb-status-label connected";
+            }
             btnDisconnectFirebase.classList.remove('hidden');
 
             // Listener de Autenticación
@@ -535,7 +579,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         picture: user.photoURL
                     };
 
-                    localStorage.setItem('cs2_user_profile', JSON.stringify(profile));
+                    try {
+                        localStorage.setItem('cs2_user_profile', JSON.stringify(profile));
+                    } catch (e) {
+                        console.warn("Storage access denied:", e);
+                    }
                     
                     // Sincronizar datos desde Firestore
                     updateLoginStatusText("login_status_downloading");
@@ -550,7 +598,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast(getTranslation('toast_sync_cloud'), 'success');
                 } else {
                     currentUser = null;
-                    localStorage.removeItem('cs2_user_profile');
+                    try {
+                        localStorage.removeItem('cs2_user_profile');
+                        localStorage.removeItem('cs2_investments');
+                    } catch (e) {
+                        console.warn("Storage access denied:", e);
+                    }
+                    transactions = [];
                     
                     // Bloquear aplicación
                     loginWall.classList.remove('hidden');
@@ -569,8 +623,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initializeFirebaseNoCloud() {
         isCloudConnected = false;
-        fbConnectionStatus.textContent = currentLang === 'es' ? "Sin Conectar" : "Disconnected";
-        fbConnectionStatus.className = "fb-status-label";
+        if (fbConnectionStatus) {
+            fbConnectionStatus.textContent = currentLang === 'es' ? "Sin Conectar" : "Disconnected";
+            fbConnectionStatus.className = "fb-status-label";
+        }
         btnDisconnectFirebase.classList.add('hidden');
 
         // Al quitar el modo demo, la app requerirá obligatoriamente que se conecte Firebase.
@@ -589,10 +645,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (doc.exists) {
                 const data = doc.data();
                 transactions = data.transactions || [];
-                localStorage.setItem('cs2_investments', JSON.stringify(transactions));
+                try {
+                    localStorage.setItem('cs2_investments', JSON.stringify(transactions));
+                } catch (e) {
+                    console.warn("Storage access denied:", e);
+                }
             } else {
                 // Migrar portafolio local preexistente si es primera vez en la nube
-                const localStored = localStorage.getItem('cs2_investments');
+                let localStored = null;
+                try {
+                    localStored = localStorage.getItem('cs2_investments');
+                } catch (e) {
+                    console.warn("Storage access denied:", e);
+                }
                 if (localStored) {
                     try {
                         transactions = JSON.parse(localStored);
@@ -614,7 +679,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function saveData() {
-        localStorage.setItem('cs2_investments', JSON.stringify(transactions));
+        try {
+            localStorage.setItem('cs2_investments', JSON.stringify(transactions));
+        } catch (e) {
+            console.warn("Storage access denied:", e);
+        }
 
         if (isCloudConnected && currentUser) {
             fbDb.collection('users').doc(currentUser.uid).set({
@@ -651,12 +720,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleLogout() {
-        if (confirm(getTranslation('toast_logout_confirm'))) {
-            if (isCloudConnected && fbAuth) {
-                fbAuth.signOut().then(() => {
-                    showToast(getTranslation('toast_logout_success'), "info");
-                });
-            }
+        if (isCloudConnected && fbAuth) {
+            fbAuth.signOut().then(() => {
+                showToast(getTranslation('toast_logout_success'), "info");
+            });
         }
     }
 
@@ -883,12 +950,43 @@ document.addEventListener('DOMContentLoaded', () => {
     investmentForm.addEventListener('submit', (e) => {
         e.preventDefault();
 
-        const editId = editIdInput.value;
+        // Limpiar estados de validación anteriores
+        const requiredInputs = [itemNameInput, itemQtyInput, itemPriceInput, itemDateInput];
+        requiredInputs.forEach(input => input.classList.remove('is-invalid'));
+
+        let isValid = true;
+
         const name = itemNameInput.value.trim();
-        const category = itemCategoryInput.value;
+        if (!name) {
+            itemNameInput.classList.add('is-invalid');
+            isValid = false;
+        }
+
         const qty = parseInt(itemQtyInput.value);
+        if (isNaN(qty) || qty <= 0) {
+            itemQtyInput.classList.add('is-invalid');
+            isValid = false;
+        }
+
         const purchasePrice = parseFloat(itemPriceInput.value);
+        if (isNaN(purchasePrice) || purchasePrice <= 0) {
+            itemPriceInput.classList.add('is-invalid');
+            isValid = false;
+        }
+
         const purchaseDate = itemDateInput.value;
+        if (!purchaseDate) {
+            itemDateInput.classList.add('is-invalid');
+            isValid = false;
+        }
+
+        if (!isValid) {
+            showToast(currentLang === 'es' ? "Por favor, rellena los campos marcados en rojo correctamente." : "Please fill in the marked fields correctly.", "danger");
+            return;
+        }
+
+        const editId = editIdInput.value;
+        const category = itemCategoryInput.value;
         const notes = itemNotesInput.value.trim();
 
         if (editId) {
@@ -930,6 +1028,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function resetForm() {
+        // Limpiar cualquier estado de validación
+        const requiredInputs = [itemNameInput, itemQtyInput, itemPriceInput, itemDateInput];
+        requiredInputs.forEach(input => input.classList.remove('is-invalid'));
+
         editIdInput.value = '';
         itemNameInput.value = '';
         itemCategoryInput.value = 'case';
@@ -1044,15 +1146,37 @@ document.addEventListener('DOMContentLoaded', () => {
     saleForm.addEventListener('submit', (e) => {
         e.preventDefault();
 
-        const id = saleItemIdInput.value;
-        const saleQty = parseInt(saleQtyInput.value);
-        const salePrice = parseFloat(salePriceInput.value);
-        const saleDate = today;
+        saleQtyInput.classList.remove('is-invalid');
+        salePriceInput.classList.remove('is-invalid');
 
+        let isValid = true;
+
+        const id = saleItemIdInput.value;
+        const item = transactions.find(t => t.id === id);
+        if (!item) return;
+
+        const saleQty = parseInt(saleQtyInput.value);
+        if (isNaN(saleQty) || saleQty <= 0 || saleQty > item.qty) {
+            saleQtyInput.classList.add('is-invalid');
+            isValid = false;
+        }
+
+        const salePrice = parseFloat(salePriceInput.value);
+        if (isNaN(salePrice) || salePrice <= 0) {
+            salePriceInput.classList.add('is-invalid');
+            isValid = false;
+        }
+
+        if (!isValid) {
+            showToast(currentLang === 'es' ? "Por favor, ingresa una cantidad y precio de venta válidos." : "Please enter a valid sale quantity and price.", "danger");
+            return;
+        }
+
+        const saleDate = today;
         const index = transactions.findIndex(t => t.id === id);
         if (index === -1) return;
 
-        const item = transactions[index];
+        // item already declared above via find()
 
         if (saleQty === item.qty) {
             transactions[index].status = 'sold';
