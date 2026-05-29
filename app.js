@@ -510,7 +510,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            fbApp = firebase.initializeApp(config);
+            // Prevenir errores de doble inicialización (HMR o recargas repetidas)
+            if (firebase.apps.length === 0) {
+                fbApp = firebase.initializeApp(config);
+            } else {
+                fbApp = firebase.app();
+            }
             fbAuth = firebase.auth();
             fbDb = firebase.firestore();
             isCloudConnected = true;
@@ -558,7 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.error("Error al inicializar Firebase:", e);
             showToast(getTranslation('toast_invalid_keys'), "danger");
-            handleDisconnectFirebase();
+            initializeFirebaseNoCloud(); // Desconecta el estado de forma segura sin loops de recarga
         }
     }
 
